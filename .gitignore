@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.venv/
+venv/
+.deps/
+node_modules/
+.DS_Store
+data/
+*.db
+.ui-check/
+.tmp/
+.chrome-check/
