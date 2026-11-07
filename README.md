@@ -59,7 +59,8 @@ The app refuses to start if `PAYPAL_API_BASE` is not a sandbox URL.
 1. Push the repo to GitHub.
 2. Render Dashboard → **New → Blueprint** → select the repo.
 3. Render reads [`render.yaml`](render.yaml) and asks for the secret values.
-4. Enter `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET` and `AI_API_KEY`.
+4. Enter `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET`, `AI_API_KEY` and a
+   `DEMO_ACCESS_CODE` of your choice.
 5. Set `PUBLIC_BASE_URL` to the actual Render URL, e.g.
    `https://paidontime.onrender.com`.
 6. Deploy and open `/healthz`; it should return
@@ -127,6 +128,13 @@ This is a public demo, so the expensive endpoints are capped:
 
 The PayPal and AI secrets stay server-side. If a key is abused, rotate it in
 the provider dashboard and redeploy; `DEMO_PAUSED` is the emergency stop.
+
+## Demo access gate
+
+Set `DEMO_ACCESS_CODE` in Render to require a code before the app opens. Judges
+enter that code from the Devpost testing instructions. The code sets an
+HttpOnly, SameSite=Lax cookie for seven days; it is a light gate, not real
+authentication. Leave it empty locally to keep `http://127.0.0.1:8000` open.
 
 ## Current limitations
 

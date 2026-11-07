@@ -11,12 +11,15 @@ Only PayPal sandbox credentials are accepted.
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import json
 import re
 import sys
 import traceback
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote, urlparse
 
@@ -75,9 +78,11 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
-    def _redirect(self, location: str) -> None:
+    def _redirect(self, location: str, cookie: str = "") -> None:
         self.send_response(303)
         self.send_header("Location", location)
+        if cookie:
+            self.send_header("Set-Cookie", cookie)
         self.send_header("Content-Length", "0")
         self.end_headers()
 
@@ -100,6 +105,77 @@ class Handler(BaseHTTPRequestHandler):
             daily_limit=daily,
         )
 
+    def _access_token(self) -> str:
+        return hmac.new(
+            config.SECRET_KEY.encode("utf-8"),
+            b"paidontime-access-v1",
+            hashlib.sha256,
+        ).hexdigest()
+
+    def _authorized(self) -> bool:
+        if not config.DEMO_ACCESS_CODE:
+            return True
+        cookie = SimpleCookie(self.headers.get("Cookie", ""))
+        morsel = cookie.get(config.ACCESS_COOKIE)
+        return bool(morsel and hmac.compare_digest(morsel.value, self._access_token()))
+
+    def _access_exempt(self, path: str) -> bool:
+        return (
+            path == "/access"
+            or path == "/healthz"
+            or path == "/favicon.ico"
+            or path.startswith("/static/")
+            or path.startswith("/samples/")
+        )
+
+    def _gate(self, path: str) -> bool:
+        if not config.DEMO_ACCESS_CODE or self._access_exempt(path) or self._authorized():
+            return True
+        if path.startswith("/api/"):
+            self._send_json({"ok": False, "error": "Demo access code required."}, 401)
+            return False
+        next_path = quote(self.path, safe="/?=&%")
+        self._redirect(f"/access?next={next_path}")
+        return False
+
+    def _safe_next(self, value: str) -> str:
+        return value if value.startswith("/") and not value.startswith("//") else "/"
+
+    def _handle_access_get(self, query: dict[str, list[str]]) -> None:
+        if not config.DEMO_ACCESS_CODE:
+            self._redirect("/")
+            return
+        next_path = self._safe_next(query.get("next", ["/"])[0])
+        self._send_html(views.access_gate(next_path=next_path))
+
+    def _handle_access_post(self, form: dict[str, str]) -> None:
+        if not config.DEMO_ACCESS_CODE:
+            self._redirect("/")
+            return
+        allowed, retry = limits.LIMITER.hit(
+            f"access:{self._client_ip()}",
+            limit=8,
+            window_seconds=600,
+        )
+        if not allowed:
+            self._send_html(
+                views.access_gate(error=f"Too many attempts. Try again in about {retry} seconds."),
+                429,
+            )
+            return
+        next_path = self._safe_next(form.get("next", "/"))
+        if hmac.compare_digest(form.get("code", ""), config.DEMO_ACCESS_CODE):
+            cookie = (
+                f"{config.ACCESS_COOKIE}={self._access_token()}; "
+                f"Path=/; Max-Age={config.ACCESS_MAX_AGE}; HttpOnly; SameSite=Lax"
+            )
+            if config.PUBLIC_BASE_URL.startswith("https://"):
+                cookie += "; Secure"
+            self._redirect(next_path, cookie=cookie)
+            return
+        self.log_message("Demo access rejected from %s", self._client_ip())
+        self._send_html(views.access_gate(next_path=next_path, error="That code is not correct."), 401)
+
     def _invoice_id(self, path: str) -> int | None:
         match = INVOICE_PATH.fullmatch(path)
         return int(match.group(1)) if match else None
@@ -119,6 +195,12 @@ class Handler(BaseHTTPRequestHandler):
         query = parse_qs(parsed.query)
         notice = query.get("notice", [""])[0]
         error = query.get("error", [""])[0]
+
+        if path == "/access":
+            self._handle_access_get(query)
+            return
+        if not self._gate(path):
+            return
 
         try:
             if path == "/":
@@ -242,6 +324,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_html(views.server_error("The request is too large."), 413)
             return
         raw = self.rfile.read(length).decode("utf-8", errors="replace") if length else ""
+        if path == "/access":
+            self._handle_access_post(parse_form(raw))
+            return
+        if not self._gate(path):
+            return
         if path == "/api/extract":
             self._handle_extract(raw)
             return

@@ -567,6 +567,26 @@ input:focus, textarea:focus, select:focus {
 .standalone { min-height: 52vh; }
 .standalone h1 { max-width: 640px; }
 
+.gate-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 62vh;
+}
+
+.gate-card {
+  width: min(520px, 100%);
+  padding: 34px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.gate-card h1 { margin: 0 0 10px; font-size: 2rem; letter-spacing: -0.04em; }
+.gate-card .lede { margin-bottom: 20px; }
+.gate-card form { margin-top: 18px; }
+.gate-card .button { margin-top: 4px; }
+
 .footer {
   display: flex;
   justify-content: space-between;

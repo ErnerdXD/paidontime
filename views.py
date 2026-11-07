@@ -611,3 +611,26 @@ def too_many(message: str = "Too many requests.", retry_after: int = 0) -> str:
       <a class="button" href="/">Back to dashboard</a>
     </div>"""
     return layout("Too many requests", content)
+
+
+def access_gate(next_path: str = "/", error: str = "") -> str:
+    content = f"""
+    <div class="gate-wrap">
+      <section class="gate-card">
+        <p class="eyebrow">PRIVATE DEMO</p>
+        <h1>Enter the demo code.</h1>
+        <p class="lede narrow">This prototype is shared with judges and reviewers. Enter the code from the submission testing notes.</p>
+        {alert(error, 'error')}
+        <form method="post" action="/access">
+          <input type="hidden" name="next" value="{esc(next_path)}">
+          <label class="field">
+            <span>Access code</span>
+            <input name="code" type="password" required autofocus autocomplete="current-password" placeholder="Demo code">
+          </label>
+          <button class="button" type="submit">Open demo</button>
+        </form>
+        <p class="fine-print">The code is a light gate, not a replacement for the demo's rate limits. It is stored in an HttpOnly cookie for seven days.</p>
+      </section>
+    </div>"""
+    return layout("Demo access", content, active="")
+

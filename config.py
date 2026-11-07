@@ -36,6 +36,11 @@ DATABASE_PATH = Path(
     os.environ.get("DATABASE_PATH", str(ROOT / "data" / "paidontime.db"))
 )
 
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-me")
+DEMO_ACCESS_CODE = os.environ.get("DEMO_ACCESS_CODE", "").strip()
+ACCESS_COOKIE = "paidontime_access"
+ACCESS_MAX_AGE = 7 * 24 * 60 * 60
+
 AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()
 AI_BASE_URL = os.environ.get("AI_BASE_URL", "https://api.deepseek.com/v1").rstrip("/")
 AI_MODEL = os.environ.get("AI_MODEL", "deepseek-chat").strip()

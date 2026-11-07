@@ -24,5 +24,9 @@ services:
         value: https://api.deepseek.com/v1
       - key: AI_MODEL
         value: deepseek-chat
+      - key: DEMO_ACCESS_CODE
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
       - key: DEMO_PAUSED
         value: "false"
