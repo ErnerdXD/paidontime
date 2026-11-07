@@ -40,6 +40,19 @@ AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()
 AI_BASE_URL = os.environ.get("AI_BASE_URL", "https://api.deepseek.com/v1").rstrip("/")
 AI_MODEL = os.environ.get("AI_MODEL", "deepseek-chat").strip()
 
+# Abuse limits for the public demo. These are deliberately low.
+EXTRACT_PER_HOUR = int(os.environ.get("EXTRACT_PER_HOUR", "12"))
+EXTRACT_DAILY = int(os.environ.get("EXTRACT_DAILY", "80"))
+INVOICE_PER_HOUR = int(os.environ.get("INVOICE_PER_HOUR", "20"))
+INVOICE_DAILY = int(os.environ.get("INVOICE_DAILY", "60"))
+REMINDER_PER_HOUR = int(os.environ.get("REMINDER_PER_HOUR", "30"))
+DEMO_PAUSED = os.environ.get("DEMO_PAUSED", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+
 if "sandbox" not in PAYPAL_API_BASE.lower():
     raise RuntimeError(
         "Refusing to start: PAYPAL_API_BASE is not a sandbox URL. "

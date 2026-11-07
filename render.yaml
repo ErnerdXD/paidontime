@@ -24,3 +24,5 @@ services:
         value: https://api.deepseek.com/v1
       - key: AI_MODEL
         value: deepseek-chat
+      - key: DEMO_PAUSED
+        value: "false"

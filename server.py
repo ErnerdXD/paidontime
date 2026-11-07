@@ -23,6 +23,7 @@ from urllib.parse import parse_qs, quote, urlparse
 import ai
 import config
 import db
+import limits
 import paypal
 import views
 
@@ -82,6 +83,22 @@ class Handler(BaseHTTPRequestHandler):
 
     def _query(self) -> dict[str, list[str]]:
         return parse_qs(urlparse(self.path).query)
+
+    def _client_ip(self) -> str:
+        forwarded = self.headers.get("X-Forwarded-For", "")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        return self.client_address[0]
+
+    def _allow(self, scope: str, *, per_hour: int, daily: int = 0) -> tuple[bool, int]:
+        ip = self._client_ip()
+        return limits.LIMITER.hit(
+            f"{scope}:{ip}",
+            limit=per_hour,
+            window_seconds=3600,
+            daily_key=f"{scope}:day" if daily else None,
+            daily_limit=daily,
+        )
 
     def _invoice_id(self, path: str) -> int | None:
         match = INVOICE_PATH.fullmatch(path)
@@ -212,7 +229,18 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
-        length = int(self.headers.get("Content-Length", "0") or 0)
+        try:
+            length = int(self.headers.get("Content-Length", "0") or 0)
+        except ValueError:
+            self._send_json({"ok": False, "error": "Invalid Content-Length."}, 400)
+            return
+        max_body = 12 * 1024 * 1024 if path == "/api/extract" else 1024 * 1024
+        if length > max_body:
+            if path.startswith("/api/"):
+                self._send_json({"ok": False, "error": "The request is too large."}, 413)
+            else:
+                self._send_html(views.server_error("The request is too large."), 413)
+            return
         raw = self.rfile.read(length).decode("utf-8", errors="replace") if length else ""
         if path == "/api/extract":
             self._handle_extract(raw)
@@ -252,6 +280,23 @@ class Handler(BaseHTTPRequestHandler):
             self._send_html(views.server_error("The server hit an unexpected error."), 500)
 
     def _handle_extract(self, raw: str) -> None:
+        if config.DEMO_PAUSED:
+            self._send_json({"ok": False, "error": "The demo is paused right now."}, 503)
+            return
+        allowed, retry = self._allow(
+            "extract",
+            per_hour=config.EXTRACT_PER_HOUR,
+            daily=config.EXTRACT_DAILY,
+        )
+        if not allowed:
+            self._send_json(
+                {
+                    "ok": False,
+                    "error": f"AI extraction limit reached. Try again in about {retry} seconds.",
+                },
+                429,
+            )
+            return
         try:
             payload = json.loads(raw or "{}")
         except json.JSONDecodeError:
@@ -288,6 +333,22 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({"ok": False, "error": "Extraction failed unexpectedly."}, 500)
 
     def _handle_reminder(self, raw: str) -> None:
+        if config.DEMO_PAUSED:
+            self._send_json({"ok": False, "error": "The demo is paused right now."}, 503)
+            return
+        allowed, retry = self._allow(
+            "reminder",
+            per_hour=config.REMINDER_PER_HOUR,
+        )
+        if not allowed:
+            self._send_json(
+                {
+                    "ok": False,
+                    "error": f"Follow-up limit reached. Try again in about {retry} seconds.",
+                },
+                429,
+            )
+            return
         try:
             payload = json.loads(raw or "{}")
             invoice_id = int(payload.get("invoice_id", 0))
@@ -313,6 +374,17 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({"ok": False, "error": "Could not draft a follow-up."}, 500)
 
     def _handle_create(self, form: dict[str, str]) -> None:
+        if config.DEMO_PAUSED:
+            self._send_html(views.too_many("The demo is paused right now."), 503)
+            return
+        allowed, retry = self._allow(
+            "invoice",
+            per_hour=config.INVOICE_PER_HOUR,
+            daily=config.INVOICE_DAILY,
+        )
+        if not allowed:
+            self._send_html(views.too_many("Invoice creation limit reached.", retry), 429)
+            return
         values = {
             "client_name": form.get("client_name", ""),
             "client_email": form.get("client_email", ""),

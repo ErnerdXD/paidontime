@@ -599,3 +599,15 @@ def server_error(message: str = "") -> str:
       <a class="button" href="/">Back to dashboard</a>
     </div>"""
     return layout("Server error", content)
+
+
+def too_many(message: str = "Too many requests.", retry_after: int = 0) -> str:
+    wait = f" Try again in about {retry_after} seconds." if retry_after else ""
+    content = f"""
+    <div class="empty standalone">
+      <p class="eyebrow">SLOW DOWN</p>
+      <h1>That was a lot of requests.</h1>
+      <p>{esc(message)}{esc(wait)}</p>
+      <a class="button" href="/">Back to dashboard</a>
+    </div>"""
+    return layout("Too many requests", content)

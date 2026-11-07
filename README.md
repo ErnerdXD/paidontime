@@ -114,6 +114,20 @@ Developer Dashboard → **Testing Tools → Sandbox Accounts**:
 Use the personal account in an incognito window. If the password is unknown,
 open the account → **View/Edit account** → reset it.
 
+## Abuse controls
+
+This is a public demo, so the expensive endpoints are capped:
+
+- **12 AI extractions per hour per IP**, **80 per day** globally.
+- **20 invoice creations per hour per IP**, **60 per day** globally.
+- **30 follow-up drafts per hour per IP**.
+- Upload body limit: 12 MB on the extraction API, 1 MB on forms.
+- `DEMO_PAUSED=true` in Render turns off extraction, invoice creation and
+  follow-ups immediately.
+
+The PayPal and AI secrets stay server-side. If a key is abused, rotate it in
+the provider dashboard and redeploy; `DEMO_PAUSED` is the emergency stop.
+
 ## Current limitations
 
 - Single-user demo; there is no login or account separation.
