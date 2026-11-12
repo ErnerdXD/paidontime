@@ -223,7 +223,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/css; charset=utf-8")
                 self.send_header("Content-Length", str(len(css)))
-                self.send_header("Cache-Control", "public, max-age=300")
+                self.send_header("Cache-Control", "no-cache")
                 self.end_headers()
                 self.wfile.write(css)
                 return

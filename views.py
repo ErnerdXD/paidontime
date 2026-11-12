@@ -70,7 +70,7 @@ def layout(title: str, content: str, active: str = "dashboard") -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{esc(title)} · PaidOnTime</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=minimal-1">
 </head>
 <body>
   <header class="topbar">
