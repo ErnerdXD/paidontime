@@ -93,7 +93,7 @@ def layout(title: str, content: str, active: str = "dashboard") -> str:
   </main>
 
   <footer class="footer">
-    <span>PaidOnTime · invoice-to-payment copilot</span>
+    <span>PaidOnTime · invoice-to-payment, without the chase</span>
     <span class="sandbox-pill"><span class="dot"></span> PayPal sandbox · no real money</span>
   </footer>
 
@@ -296,7 +296,7 @@ EXTRACT_SCRIPT = """
       setStatus(error.message || "Extraction failed.", "err");
     } finally {
       extractBtn.disabled = false;
-      extractBtn.textContent = "Extract with AI";
+      extractBtn.textContent = "Read invoice";
     }
   });
 })();
@@ -324,14 +324,14 @@ def new_invoice(values: dict | None = None, error: str = "") -> str:
       <section class="panel form-panel">
         <div class="upload-box">
           <div class="upload-copy">
-            <span class="ai-chip">AI EXTRACTION</span>
-            <h2>Start with the invoice PDF</h2>
-            <p>Upload a text-based PDF and let AI fill the fields. Review everything before creating the payment link.</p>
+            <span class="ai-chip">IMPORT</span>
+            <h2>Read the invoice</h2>
+            <p>Upload a text-based PDF and the details are read into the form. Review everything before creating the payment link.</p>
           </div>
           <div class="upload-actions">
             <input type="file" id="invoice_file" accept="application/pdf" hidden>
             <label class="button button-quiet" for="invoice_file">Choose PDF</label>
-            <button class="button" type="button" id="extract-btn">Extract with AI</button>
+            <button class="button" type="button" id="extract-btn">Read invoice</button>
           </div>
           <p class="file-name" id="file-name">No file selected · max 8 MB</p>
           <p class="extract-status" id="extract-status" role="status"></p>
@@ -488,10 +488,10 @@ def detail(invoice, notice: str = "", error: str = "") -> str:
     if is_created and invoice["due_date"]:
         reminder_panel = f"""
         <div class="followup">
-          <p class="eyebrow">AI FOLLOW-UP</p>
+          <p class="eyebrow">FOLLOW-UP</p>
           <h3>Draft a reminder</h3>
           <p class="aside-copy">Write a polite follow-up for {esc(invoice['client_name'])} using the invoice and due date.</p>
-          <button class="button button-quiet" type="button" id="draft-reminder" data-invoice="{invoice['id']}">Draft with AI</button>
+          <button class="button button-quiet" type="button" id="draft-reminder" data-invoice="{invoice['id']}">Draft follow-up</button>
           <p class="extract-status" id="reminder-status" role="status"></p>
           <div class="reminder-result" id="reminder-result" hidden>
             <label class="field"><span>Subject</span><input id="reminder-subject" readonly></label>
@@ -563,7 +563,7 @@ def detail(invoice, notice: str = "", error: str = "") -> str:
         <h2>{'Nothing to chase.' if is_paid else 'Send a nudge.' if overdue else 'Send the checkout.' if is_created else 'Capture the payment.' if is_approved else 'Review this invoice.'}</h2>
         <p class="aside-copy">
           {'This invoice is complete. The capture ID is stored above.' if is_paid else
-           'This invoice is past due. Open the checkout again or draft a polite follow-up with AI.' if overdue else
+           'This invoice is past due. Open the checkout again or draft a polite follow-up.' if overdue else
            'Open the PayPal checkout, log in with the sandbox personal buyer, and approve the payment. Then return here and capture.' if is_created else
            'PayPal has approved the order. Capture it now to move the money in sandbox.' if is_approved else
            'This invoice is not currently awaiting payment.'}
