@@ -19,6 +19,19 @@ extraction are working; follow-up drafting and deployment come next.
 - Retry a failed or cancelled payment link.
 - No real money and no live PayPal credentials.
 
+## How PayPal and AI are used
+
+**PayPal Orders v2 (sandbox):** OAuth 2.0 client credentials, create order,
+approval URL, order status, and capture. The freelancer reviews the invoice,
+the buyer approves in PayPal sandbox, and the app captures the payment and
+stores the capture ID.
+
+**DeepSeek (`deepseek-chat`):** reads extracted PDF text and returns structured
+invoice fields (client, invoice number, amount, currency, due date, confidence,
+warnings), then drafts a polite follow-up from the overdue invoice context.
+The model never decides whether a payment is captured; the human reviews every
+field and PayPal performs the payment. `pypdf` extracts PDF text locally.
+
 ## Stack
 
 - Python 3.11+; `http.server` + SQLite
