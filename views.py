@@ -70,7 +70,7 @@ def layout(title: str, content: str, active: str = "dashboard") -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{esc(title)} · PaidOnTime</title>
-  <link rel="stylesheet" href="/static/style.css?v=minimal-1">
+  <link rel="stylesheet" href="/static/style.css?v=minimal-2">
 </head>
 <body>
   <header class="topbar">
@@ -198,7 +198,7 @@ def dashboard(invoices: list, stats: dict, notice: str = "", error: str = "") ->
       <div class="stat">
         <p class="stat-label">Awaiting payment</p>
         <p class="stat-value">{stats['awaiting_count']}</p>
-        <p class="stat-note">Created or approved, not captured</p>
+        <p class="stat-note">Open invoices still needing action</p>
       </div>
       <div class="stat stat-alert">
         <p class="stat-label">Overdue</p>
